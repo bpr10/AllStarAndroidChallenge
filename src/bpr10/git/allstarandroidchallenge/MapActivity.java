@@ -9,6 +9,9 @@ import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.Context;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
@@ -31,6 +34,8 @@ public class MapActivity extends ActionBarActivity implements
 	private String tag = getClass().getSimpleName();
 	private String resultString;
 	private double lat, lng;
+	MediaPlayer mp;
+	String currentReviewPlaying = "NONE";
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	@SuppressLint("NewApi")
@@ -47,25 +52,6 @@ public class MapActivity extends ActionBarActivity implements
 		MapFragment mapFragment = (MapFragment) getFragmentManager()
 				.findFragmentById(R.id.map);
 		mapFragment.getMapAsync(this);
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.map, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		// Handle action bar item clicks here. The action bar will
-		// automatically handle clicks on the Home/Up button, so long
-		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
 	}
 
 	private List<DisplayObject> makeResultsList(String resultString) {
@@ -120,7 +106,24 @@ public class MapActivity extends ActionBarActivity implements
 
 			@Override
 			public void onInfoWindowClick(Marker marker) {
-				AppController.playSound(getApplicationContext(), R.raw.pling);
+				if (currentReviewPlaying.equals(marker.getId())) {
+					if (mp != null) {
+
+						mp.stop();
+						currentReviewPlaying = "NONE";
+					}
+				} else {
+					int songId = Integer.parseInt(marker.getId().replace("m",
+							"")) % 10;
+					Log.d(tag, "song id :" + songId);
+					currentReviewPlaying = marker.getId();
+					if (mp != null) {
+						mp.stop();
+					}
+					playSound(getApplicationContext(),
+							AppController.SOUNDS_LIST[songId]);
+				}
+
 			}
 		});
 		map.setOnMarkerClickListener(new OnMarkerClickListener() {
@@ -134,5 +137,26 @@ public class MapActivity extends ActionBarActivity implements
 			}
 		});
 
+	}
+
+	void playSound(Context context, int resId) {
+		mp = MediaPlayer.create(context, resId);
+		mp.start();
+		mp.setOnCompletionListener(new OnCompletionListener() {
+
+			@Override
+			public void onCompletion(MediaPlayer mp) {
+				currentReviewPlaying = "NONE";
+				mp.release();
+			}
+		});
+	}
+
+	@Override
+	protected void onStop() {
+		if (mp != null) {
+			mp.stop();
+		}
+		super.onStop();
 	}
 }

@@ -17,7 +17,8 @@ public class AppController extends Application {
 	public static String[] CATEGORIES = { "All", "Restaurant", "Historical Places" };
 	public static int[] CATEGORY_ICONS = { R.drawable.ic_icon_filter,
 			R.drawable.ic_restaurant, R.drawable.ic_bakery };
-	
+	public static int[] SOUNDS_LIST = { R.raw.one,
+		R.raw.two,R.raw.three,R.raw.four,R.raw.five,R.raw.six,R.raw.seven,R.raw.eight };
 	
 	public static synchronized AppController getInstance() {
 		return mInstance;
@@ -54,16 +55,4 @@ public class AppController extends Application {
 		}
 	}
 	
-
-	static void playSound(Context context , int resId){
-		MediaPlayer mp = MediaPlayer.create(context, resId);
-		mp.start();
-		mp.setOnCompletionListener(new OnCompletionListener() {
-			
-			@Override
-			public void onCompletion(MediaPlayer mp) {
-				mp.release();
-			}
-		});
-	}
 }

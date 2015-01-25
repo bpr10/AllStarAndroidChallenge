@@ -1,5 +1,11 @@
 package bpr10.git.allstarandroidchallenge;
 
+import java.util.Locale;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.location.Location;
@@ -7,13 +13,15 @@ import android.location.LocationListener;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.support.v7.app.ActionBarActivity;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Spinner;
 import android.widget.Toast;
 import cn.pedant.SweetAlert.SweetAlertDialog;
 
@@ -28,52 +36,100 @@ import com.google.android.gms.location.LocationServices;
 
 public class MainActivity extends ActionBarActivity implements
 		ConnectionCallbacks, OnConnectionFailedListener, LocationListener {
-
+	
 	private GoogleApiClient mGoogleApiClient;
 	private Location mLastLocation;
 	private String tag = getClass().getSimpleName();
 	private EditText distanceField;
-	private Spinner searchField;
 	private Button showPlacesButton;
-	ProgressDialog pDialog;
-	private String categoryKeyword = "DEFAULT";
+	private AutoCompleteTextView searchField;
+	private ArrayAdapter<String> adapter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		buildGoogleApiClient();
+
 		mGoogleApiClient.connect();
-		searchField = (Spinner) findViewById(R.id.search_keyword_field);
 		distanceField = (EditText) findViewById(R.id.distance_field);
 		showPlacesButton = (Button) findViewById(R.id.show_places_button);
-		SpinerApapter spinerAdapter = new SpinerApapter(this,
-				R.layout.filter_spinner_item, AppController.CATEGORIES);
-		searchField.setAdapter(spinerAdapter);
-		searchField.setClickable(true);
-		searchField
-				.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-					@Override
-					public void onItemSelected(AdapterView<?> arg0, View arg1,
-							int arg2, long arg3) {
-						if (searchField.getSelectedItemPosition() != 0) {
-							categoryKeyword = AppController.CATEGORIES[searchField
-									.getSelectedItemPosition()];
+		searchField = (AutoCompleteTextView) findViewById(R.id.search_keyword_field);
+		adapter = new ArrayAdapter<String>(this,
+				android.R.layout.simple_spinner_dropdown_item, COUNTRIES);
+		adapter.setNotifyOnChange(true);
+		searchField.setAdapter(adapter);
+		searchField.addTextChangedListener(new TextWatcher() {
 
-						} else {
-							categoryKeyword = "DEFAULT";
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before,
+					int count) {
+				try {
+					if (count % 2 == 1) {
+						String url = "http://suggestqueries.google.com/complete/search?q="
+								+ s + "&client=chrome";
+						StringRequest autoCompleteRequest = new StringRequest(
+								url, new Response.Listener<String>() {
 
-						}
+									@Override
+									public void onResponse(String arg0) {
+										try {
+											JSONArray resultsArray = new JSONArray(
+													arg0);
+											JSONArray queryResults = resultsArray
+													.getJSONArray(1);
+											adapter.clear();
+											Log.d(tag, "Predictions " + arg0);
+//											JSONObject predictions = new JSONObject(
+//													arg0);
+											// JSONArray ja = new JSONArray(
+											// predictions
+											// .getString("predictions"));
 
+											for (int i = 0; i < queryResults
+													.length(); i++) {
+												// JSONObject jo = (JSONObject)
+												// ja
+												// .get(i);
+												// adapter.add(jo
+												// .getString("description"));
+												// adapter.notifyDataSetChanged();
+												adapter.add(queryResults
+														.getString(i));
+												adapter.notifyDataSetChanged();
+											}
+										} catch (JSONException e) {
+											e.printStackTrace();
+										}
+
+									}
+								}, new Response.ErrorListener() {
+
+									@Override
+									public void onErrorResponse(VolleyError arg0) {
+										Log.d(tag, "Response Error " + arg0);
+									}
+								});
+						AppController.getInstance().addToRequestQueue(
+								autoCompleteRequest);
 					}
 
-					@Override
-					public void onNothingSelected(AdapterView<?> arg0) {
-						categoryKeyword = "DEFAULT";
+				} catch (NullPointerException e) {
+					e.printStackTrace();
+				}
+			}
 
-					}
-				});
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
 
+			}
+
+			@Override
+			public void afterTextChanged(Editable s) {
+
+			}
+		});
 		showPlacesButton.setOnClickListener(new OnClickListener() {
 
 			private ProgressDialog mProgressDialog;
@@ -81,11 +137,17 @@ public class MainActivity extends ActionBarActivity implements
 			@Override
 			public void onClick(View v) {
 				if (mLastLocation != null) {
-					if (categoryKeyword != "DEFAULT") {
+					if (searchField.getText().toString().length() != 0) {
 						double filterRadius = Double.parseDouble(distanceField
 								.getText().toString() + "0");
 						if (filterRadius == 0) {
-							filterRadius = 100;
+							filterRadius = 1000;
+						}
+						String searchQuery;
+						if(searchField.getText().toString().toLowerCase(Locale.getDefault()).contains("near me")){
+							searchQuery = searchField.getText().toString();
+						}else{
+							searchQuery = searchField.getText().toString()+" near me";
 						}
 						mProgressDialog = new ProgressDialog(MainActivity.this);
 						mProgressDialog.setMessage("Retrieving your Results");
@@ -95,14 +157,14 @@ public class MainActivity extends ActionBarActivity implements
 						mProgressDialog.setCancelable(false);
 						mProgressDialog.show();
 						String url = "https://maps.googleapis.com/maps/api/place/search/json?keyword="
-								+ categoryKeyword.replace(" ", "+")
+								+ searchQuery.replace(" ", "+")
 								+ "&location="
 								+ mLastLocation.getLatitude()
 								+ ","
 								+ mLastLocation.getLongitude()
 								+ "&radius="
 								+ (int) filterRadius
-								* 100
+								* 1000
 								+ "&key=AIzaSyA9zOSPtdouVFMlbvOu_5GIgRpH_uWbBIA";
 						Log.d(tag, url);
 						StringRequest getPlacesrequest = new StringRequest(url,
@@ -112,6 +174,17 @@ public class MainActivity extends ActionBarActivity implements
 									public void onResponse(String arg0) {
 										if (mProgressDialog.isShowing()) {
 											mProgressDialog.dismiss();
+										}
+										try {
+											JSONObject response = new JSONObject(arg0);
+											JSONArray results = response.getJSONArray("results");
+											if (results.length()== 0 )
+											{
+												
+											}
+										} catch (JSONException e1) {
+											// TODO Auto-generated catch block
+											e1.printStackTrace();
 										}
 										Log.d(tag, "Places Response : " + arg0);
 										try {
@@ -207,8 +280,6 @@ public class MainActivity extends ActionBarActivity implements
 		mLastLocation = LocationServices.FusedLocationApi
 				.getLastLocation(mGoogleApiClient);
 		if (mLastLocation != null) {
-			Toast.makeText(getApplicationContext(),
-					mLastLocation.getLatitude() + "", 1000).show();
 		}
 
 	}
@@ -222,6 +293,7 @@ public class MainActivity extends ActionBarActivity implements
 	@Override
 	protected void onStart() {
 		super.onStart();
+		getSupportActionBar().hide();
 		mGoogleApiClient.connect();
 	}
 
@@ -245,10 +317,6 @@ public class MainActivity extends ActionBarActivity implements
 	public void onLocationChanged(Location location) {
 		mLastLocation = LocationServices.FusedLocationApi
 				.getLastLocation(mGoogleApiClient);
-		if (mLastLocation != null) {
-			Toast.makeText(getApplicationContext(),
-					mLastLocation.getLatitude() + "", 1000).show();
-		}
 	}
 
 	@Override
@@ -260,14 +328,13 @@ public class MainActivity extends ActionBarActivity implements
 	public void onProviderEnabled(String provider) {
 		mLastLocation = LocationServices.FusedLocationApi
 				.getLastLocation(mGoogleApiClient);
-		if (mLastLocation != null) {
-			Toast.makeText(getApplicationContext(),
-					mLastLocation.getLatitude() + "", 1000).show();
-		}
+
 	}
 
 	@Override
 	public void onProviderDisabled(String provider) {
 
 	}
+
+	private static final String[] COUNTRIES = new String[] {};
 }
