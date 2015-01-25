@@ -114,7 +114,7 @@ public class MapActivity extends ActionBarActivity implements
 					}
 				} else {
 					int songId = Integer.parseInt(marker.getId().replace("m",
-							"")) % 10;
+							"")) % AppController.SOUNDS_LIST.length	;
 					Log.d(tag, "song id :" + songId);
 					currentReviewPlaying = marker.getId();
 					if (mp != null) {
