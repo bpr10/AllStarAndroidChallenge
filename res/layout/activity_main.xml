@@ -8,35 +8,35 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="bpr10.git.allstarandroidchallenge.MainActivity" >
 
-    <EditText
-        android:id="@+id/editText1"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="113dp"
-        android:hint="Enter Search Criteria" 
-        android:ems="10" />
-
+    
     <Button
-        android:id="@+id/button1"
+        android:id="@+id/show_places_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/editText2"
-        android:layout_alignRight="@+id/editText2"
-        android:layout_below="@+id/editText2"
+        android:layout_alignLeft="@+id/distance_field"
+        android:layout_alignRight="@+id/distance_field"
+        android:layout_below="@+id/distance_field"
         android:layout_marginTop="25dp"
         android:text="Show Places" />
 
     <EditText
-        android:id="@+id/editText2"
+        android:id="@+id/distance_field"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignLeft="@+id/editText1"
-        android:layout_below="@+id/editText1"
+        android:layout_alignLeft="@+id/search_keyword_field"
+        android:layout_alignRight="@+id/search_keyword_field"
+        android:layout_below="@+id/search_keyword_field"
         android:layout_marginTop="25dp"
         android:ems="10"
         android:hint="Enter Distance"
         android:inputType="numberDecimal" />
+
+    <Spinner
+        android:id="@+id/search_keyword_field"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="120dp" />
 
 </RelativeLayout>
